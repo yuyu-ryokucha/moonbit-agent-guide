@@ -1,6 +1,6 @@
 ---
 name: moonbit-refactoring
-description: Refactor MoonBit code to be idiomatic: shrink public APIs, convert functions to methods, use pattern matching with views, add loop invariants, and ensure test coverage without regressions. Use when updating MoonBit packages or refactoring MoonBit APIs, modules, or tests.
+description: "Refactor MoonBit code to be idiomatic: shrink public APIs, convert functions to methods, use pattern matching with views, add loop invariants, and ensure test coverage without regressions. Use when updating MoonBit packages or refactoring MoonBit APIs, modules, or tests."
 ---
 
 # MoonBit Refactoring Skill

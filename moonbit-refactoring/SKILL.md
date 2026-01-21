@@ -94,15 +94,35 @@ Example:
 let n = @parser.parse_number(token)
 ```
 
-### Simplify Constructors When Type Is Known
-- Drop `TypePath::Constr` when the surrounding type is known.
+### Simplify Enum Constructors When Type Is Known (Check Mode)
 
-Example:
+When the expected type is known from context ("check mode"), you can omit the full package path for enum constructors:
+
+- **Pattern matching**: When matching on a typed expression, constructor paths can be omitted.
+- **Nested constructors**: Only the outermost constructor needs the full path; inner constructors inherit the type.
+- **Return values**: When a function's return type specifies an enum, constructors in the body can be unqualified.
+- **Literal collections**: Only the outer container needs a type annotation.
+- **Literal resolution**: Types like `'a'` resolve to `Int`, `Char`, etc. based on the expected type.
+
+Examples:
 ```mbt
-match tree { // the type of tree is known to be Tree
-  Leaf(x) => x // no need for Tree::Leaf
+// Pattern matching - type annotation makes constructors unambiguous
+match (tree : @pkga.Tree) {
+  Leaf(x) => x // no need for @pkga.Tree::Leaf
   Node(left~, x, right~) => left.sum() + x + right.sum()
 }
+
+// Nested constructors - only outer needs full path
+let x = @pkga.Tree::Node(left=Leaf(1), x=2, right=Leaf(3))
+
+// Return type provides context
+fn make_tree() -> @pkga.Tree {
+  Node(left=Leaf(1), x=2, right=Leaf(3))
+}
+
+// Literal resolution based on expected type
+let x : Int = 'a'   // 'a' resolves to Int
+let y : Char = 'a'  // 'a' resolves to Char
 ```
 
 ### Pattern Matching and Views

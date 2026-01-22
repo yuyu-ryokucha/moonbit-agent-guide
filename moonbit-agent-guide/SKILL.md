@@ -168,7 +168,6 @@ Use snapshot tests as it is easy to update when behavior changes.
 Public APIs are encouraged to have docstring tests.
 
 ````mbt check
-
 ///|
 /// Get the largest element of a non-empty `Array`.
 ///
@@ -194,29 +193,24 @@ The MoonBit code in a docstring will be type checked and tested automatically
 - The spec can be written in a readonly `spec.mbt` file (name is conventional, not mandatory) with stub code marked as declarations:
 
 ```mbt check
+///|
+declare pub type Yaml
 
 ///|
-#declaration_only
-pub type Yaml
+declare pub fn Yaml::to_string(y : Yaml) -> String raise
 
 ///|
-#declaration_only
-pub fn Yaml::to_string(y : Yaml) -> String raise {
-  ...
-}
+declare pub impl Eq for Yaml
 
 ///|
-#declaration_only
-pub fn parse_yaml(s : String) -> Yaml raise {
-  ...
-}
+declare pub fn parse_yaml(s : String) -> Yaml raise
 ```
 
 - Add `spec_easy_test.mbt`, `spec_difficult_test.mbt`, etc. to test the spec functions; everything will be type-checked(`moon check`).
-- The AI or users can implement the `declaration_only` functions in different files thanks to our package organization.
+- The AI or users can implement the `declare` functions in different files thanks to our package organization.
 - Run `moon test` to check everything is correct.
 
-- `#declaration_only` is supported for functions, methods, and types.
+- `declare` is supported for functions, methods, and types.
 - The `pub type Yaml` line is an intentionally opaque placeholder; the implementer chooses its representation.
 - Note the spec file can also contain normal code, not just declarations.
 
@@ -447,7 +441,6 @@ Packages are per directory and packages without a `moon.pkg.json` file are not r
 Example:
 
 ```mbt
-
 ///|
 /// In main.mbt after importing "username/hello/liba" in `moon.pkg.json`
 fn main {
@@ -506,7 +499,6 @@ default. Use `try?` to convert to `Result[...]` in tests, or `try { } catch { }`
 to handle errors explicitly. Use `try!` to abort if it does raise.
 
 ```mbt check
-
 ///|
 /// Declare error types with 'suberror'
 suberror ValueError {
@@ -592,8 +584,8 @@ fn safe_parse(s : String, position~ : Position) -> Result[Int, ParseError] {
 
 ///|
 /// Handle with try-catch
-fn handle_parse(s : String, position~: Position) -> Int {
-  try parse_int(s, position=position) catch {
+fn handle_parse(s : String, position~ : Position) -> Int {
+  try parse_int(s, position~) catch {
     ParseError::InvalidEof => {
       println("Parse failed: InvalidEof")
       -1 // Default value
@@ -613,7 +605,6 @@ MoonBit supports `Byte`, `Int16`, `Int`, `UInt16`, `UInt`, `Int64`, `UInt64`, et
 When the type is known, the literal can be overloaded:
 
 ```mbt check
-
 ///|
 test "integer and char literal overloading disambiguation via type in the current context" {
   let a0 = 1 // a is Int by default
@@ -623,12 +614,12 @@ test "integer and char literal overloading disambiguation via type in the curren
   assert_eq(int, uint16.to_int())
   let a1 : Int = 'b' // this also works, a5 will be the unicode value
   let a2 : Char = 'b'
+
 }
 ```
 ## Bytes (Immutable)
 
 ```mbt check
-
 ///|
 test "bytes literals overloading and indexing" {
   let b0 : Bytes = b"abcd"
@@ -638,19 +629,18 @@ test "bytes literals overloading and indexing" {
     // Bytes can be pattern matched as BytesView and indexed
     fail("unexpected bytes content")
   }
-
 }
 ```
 ## Array (Resizable)
 
 ```mbt check
-
 ///|
 test "array literals overloading: disambiguation via type in the current context" {
   let a0 : Array[Int] = [1, 2, 3] // resizable
   let a1 : FixedArray[Int] = [1, 2, 3] // Fixed size
   let a2 : ReadOnlyArray[Int] = [1, 2, 3]
   let a3 : ArrayView[Int] = [1, 2, 3]
+
 }
 ```
 ## String (Immutable UTF-16)
@@ -658,15 +648,14 @@ test "array literals overloading: disambiguation via type in the current context
 Since MoonBit supports char literal overloading, you can write code snippets like this:
 
 ```mbt check
-
 ///|
 test "string indexing and utf8 encode/decode" {
   let s = "hello world"
   let b0 : UInt16 = s[0]
-  guard(b0 is ('\n' | 'h' | 'b' | 'a'..='z') && s is [.."hello", ..rest]) else {
+  guard b0 is ('\n' | 'h' | 'b' | 'a'..='z') && s is [.. "hello", .. rest] else {
     fail("unexpected string content")
   }
-  guard rest is " world" // otherwise will crash (guard without else)
+  guard rest is " world"  // otherwise will crash (guard without else)
 
   // In check mode (expression with explicit type), ('\n' : UInt16) is valid.
 
@@ -694,10 +683,8 @@ test "string indexing and utf8 encode/decode" {
 MoonBit uses `\{}` for string interpolation, for custom types, they need to implement trait `Show`.
 
 ```mbt check
-
 ///|
 test "string interpolation basics" {
-
   let name : String = "Moon"
   let config = { "cache": 123 }
   let version = 1.0
@@ -708,11 +695,11 @@ test "string interpolation basics" {
   // ✅ Correct - extract to variable first:
   let has_key = config["cache"] // `"` not allowed in interpolation
   println("  - Checking if 'cache' section exists: \{has_key}")
-
   let sb = StringBuilder::new()
-  sb..write_char('[') // dotdot for imperative method chaining
-    ..write_view([1,2,3].map((x) => "\{x}").join(","))
-    ..write_char(']')
+  sb
+  ..write_char('[') // dotdot for imperative method chaining
+  ..write_view([1, 2, 3].map(x => "\{x}").join(","))
+  ..write_char(']')
   inspect(sb.to_string(), content="[1,2,3]")
 }
 ```
@@ -723,7 +710,6 @@ Expressions inside `\{}` can only be _basic expressions_ (no quotes, newlines, o
 ### Multiple line strings
 
 ```mbt check
-
 ///|
 test "multi-line string literals" {
   let multi_line_string : String =
@@ -744,7 +730,6 @@ test "multi-line string literals" {
 ## Map (Mutable, Insertion-Order Preserving)
 
 ```mbt check
-
 ///|
 test "map literals and common operations" {
   // Map literal syntax
@@ -805,7 +790,6 @@ Convert back with `.to_string()`, `.to_bytes()`, or `.to_array()` when you need 
 ## User defined types(`enum`, `struct`)
 
 ```mbt check
-
 ///|
 enum Tree[T] {
   Leaf(T) // Unlike Rust, no comma here
@@ -827,20 +811,18 @@ struct Point {
   y : Int
 } derive(Show, ToJson) // derive traits for Point
 
+///|
 test "user defined types: enum and struct" {
-  @json.inspect(Point::{ x: 10, y: 20 }, content=({"x":10,"y":20}))
+  @json.inspect(Point::{ x: 10, y: 20 }, content={ "x": 10, "y": 20 })
 }
-
 ```
 
 ## Functional `for` loop
 
 
 ```mbt check
-pub fn binary_search(
-  arr : ArrayView[Int],
-  value : Int,
-) -> Result[Int, Int] {
+///|
+pub fn binary_search(arr : ArrayView[Int], value : Int) -> Result[Int, Int] {
   let len = arr.length()
   // functional for loop:
   // initial state ; [predicate] ; [post-update] {
@@ -863,10 +845,10 @@ pub fn binary_search(
       Err(i)
     }
   } where {
-    invariant : 0 <= i && i <= j && j <= len,
-    invariant : i == 0 || arr[i - 1] < value,
-    invariant : j == len || arr[j] >= value,
-    reasoning :
+    invariant: 0 <= i && i <= j && j <= len,
+    invariant: i == 0 || arr[i - 1] < value,
+    invariant: j == len || arr[j] >= value,
+    reasoning: (
       #|For a sorted array, the boundary invariants are witnesses:
       #|  - `arr[i-1] < value` implies all arr[0..i) < value (by sortedness)
       #|  - `arr[j] >= value` implies all arr[j..len) >= value (by sortedness)
@@ -882,14 +864,15 @@ pub fn binary_search(
       #|  - So if value exists, it can only be at index i
       #|  - If arr[i] != value, then value is absent and i is the insertion point
       #|
+    ),
   }
 }
 
 ///|
 test "functional for loop control flow" {
   let arr : Array[Int] = [1, 3, 5, 7, 9]
-  inspect(binary_search(arr,5), content="Ok(2)") // Array to ArrayView implicit conversion when passing as arguments
-  inspect(binary_search(arr,6), content="Err(3)")
+  inspect(binary_search(arr, 5), content="Ok(2)") // Array to ArrayView implicit conversion when passing as arguments
+  inspect(binary_search(arr, 6), content="Err(3)")
   // for iteration is supported too
   for i, v in arr {
     println("\{i}: \{v}") // `i` is index, `v` is value
@@ -933,7 +916,6 @@ for ... {
 Good example: use labeled and optional parameters
 
 ```mbt check
-
 ///|
 fn g(
   positional : Int,
@@ -961,7 +943,6 @@ Misuse: `arg : Type?` is not an optional parameter.
 Callers still must pass it (as `None`/`Some(...)`).
 
 ```mbt check
-
 ///|
 fn with_config(a : Int?, b : Int?, c : Int) -> String {
   "\{a},\{b},\{c}"
@@ -978,7 +959,6 @@ Anti-pattern: `arg? : Type?` (no default => double Option).
 If you want a defaulted optional parameter, write `b? : Int = 1`, not `b? : Int? = Some(1)`.
 
 ```mbt check
-
 ///|
 fn f_misuse(a? : Int?, b? : Int = 1) -> Unit {
   let _ : Int?? = a // rarely intended
@@ -1006,7 +986,6 @@ test {
 Bad example: `arg : APIOptions` (use labeled optional parameters instead)
 
 ```mbt check
-
 ///|
 /// Do not use struct to group options.
 struct APIOptions {
@@ -1022,8 +1001,8 @@ fn not_idiomatic(opts : APIOptions, arg : Int) -> Unit {
 ///|
 test {
   // Hard to use in call site
-  not_idiomatic({ width : Some(5), height : None }, 10)
-  not_idiomatic({ width : None, height : None }, 10)
+  not_idiomatic({ width: Some(5), height: None }, 10)
+  not_idiomatic({ width: None, height: None }, 10)
 }
 ```
 

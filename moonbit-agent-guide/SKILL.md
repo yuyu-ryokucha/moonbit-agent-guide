@@ -8,7 +8,7 @@ description: Guide for writing, refactoring, and testing MoonBit projects. Use w
 MoonBit uses the `.mbt` extension for source code files and interface files with the `.mbti` extension. At
 the top-level of a MoonBit project there is a `moon.mod.json` file specifying
 the metadata of the project. The project may contain multiple packages, each
-with its own `moon.pkg.json` file. Subdirectories may also contain `moon.mod.json`
+with its own `moon.pkg` or `moon.pkg.json` file. Subdirectories may also contain `moon.mod.json`
 files indicating that a different set of dependencies can be used for that subdir.
 
 ## Example layout
@@ -37,7 +37,7 @@ my_module
   A MoonBit *module* is like a Go module; it is a collection of packages in subdirectories, usually corresponding to a repository or project.
   Module boundaries matter for dependency management and import paths.
 
-- **Package**: characterized by a `moon.pkg.json` file in each directory.
+- **Package**: characterized by a `moon.pkg.json` (or `moon.pkg`) file in each directory.
   All subcommands of `moon` will
   still be executed in the directory of the module (where `moon.mod.json` is
   located), not the current package.
@@ -406,6 +406,17 @@ moon update                   # Update package index
 
 ### Typical Package configuration (`moon.pkg.json`)
 
+moon.pkg for simplicity
+```
+import {
+  "username/hello/liba",
+  "moonbitlang/x/encoding" as @libb
+}
+import {...} for "test"
+import {...} for "wbtest"
+options("is-main" : true)
+```
+or moon.pkg.json 
 ```json
 {
   "is_main": true,                 // Creates executable when true
@@ -421,7 +432,7 @@ moon update                   # Update package index
 }
 ```
 
-Packages are per directory and packages without a `moon.pkg.json` file are not recognized.
+Packages are per directory and packages without a `moon.pkg.json` or `moon.pkg` file are not recognized.
 
 ### Package Importing (used in moon.pkg.json)
 

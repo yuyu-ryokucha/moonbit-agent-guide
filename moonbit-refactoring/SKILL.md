@@ -76,10 +76,13 @@ fn reader_next(r : Reader) -> Char? { ... }
 let ch = reader_next(r)
 
 // After
+#as_free_fn(reader_next, deprecated="Use Reader::next instead")
 fn Reader::next(self : Reader) -> Char? { ... }
 let ch = r.next()
 ```
-
+To make the transition smooth, place `#as_free_fn(old_name, ...)` on the method; it emits a deprecated free function
+`old_name` that forwards to the method.
+Then you can check call sites and update them gradually by looking at warnings.
 Example (chaining):
 ```mbt nocheck
 buf..write_string("#\\")..write_char(ch)

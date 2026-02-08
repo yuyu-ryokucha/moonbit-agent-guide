@@ -156,6 +156,7 @@ Use snapshot tests as it is easy to update when behavior changes.
   - It is encouraged to `inspect` or `@json.inspect` the whole return value of a function if
     the whole return value is not huge, this makes the test simple. You need `impl (Show|ToJson) for YourType` or `derive (Show, ToJson)`.
 - **Update workflow**: After changing code that affects output, run `moon test --update` to regenerate snapshots, then review the diffs in your test files (the `content=` parameter will be updated automatically).
+- **Fast agent loop**: run `moon check` after each edit, run targeted tests with `moon test [dirname|filename]`, then `moon fmt`, and finally `moon info` before handoff to verify public API changes (`pkg.generated.mbti`).
 
 - Black-box by default: Call only public APIs via `@package.fn`. Use white-box tests only when private members matter.
 - Grouping: Combine related checks in one `test "..." { ... }` block for speed and clarity.
@@ -365,7 +366,7 @@ Definition found at file src/parse.mbt
 ```
 
 For the `--loc` argument, the line number must be precise; the column can be approximate since
-the positonal argument `Parser` helps locate the position.
+the positional argument `Parser` helps locate the position.
 
 If the "sym" is a toplevel symbol, the location can be omitted:
 

@@ -8,7 +8,7 @@ description: Guide for writing, refactoring, and testing MoonBit projects. Use w
 MoonBit uses the `.mbt` extension for source code files and interface files with the `.mbti` extension. At
 the top-level of a MoonBit project there is a `moon.mod.json` file specifying
 the metadata of the project. The project may contain multiple packages, each
-with its own `moon.pkg` or `moon.pkg.json` file. Subdirectories may also contain `moon.mod.json`
+with its own `moon.pkg` or `moon.pkg.json` (legacy mode). Subdirectories may also contain `moon.mod.json`
 files indicating that a different set of dependencies can be used for that subdir.
 
 ## Example layout
@@ -16,17 +16,17 @@ files indicating that a different set of dependencies can be used for that subdi
 ```
 my_module
 ├── moon.mod.json             # Module metadata, source field (optional) specifies the source directory of the module
-├── moon.pkg.json             # Package metadata (each directory is a package like Golang)
+├── moon.pkg             # Package metadata (each directory is a package like Golang)
 ├── README.mbt.md             # Markdown with tested code blocks (`test "..." { ... }`)
 ├── README.md -> README.mbt.md
 ├── cmd                       # Command line directory
 │   └── main
 │       ├── main.mbt
-│       └── moon.pkg.json     # executable package with `{"is_main": true}`
+│       └── moon.pkg     # executable package with `options("is-main": true)`
 ├── liba/                     # Library packages
-│   └── moon.pkg.json         # Referenced by other packages as `@username/my_module/liba`
+│   └── moon.pkg         # Referenced by other packages as `@username/my_module/liba`
 │   └── libb/                 # Library packages
-│       └── moon.pkg.json     # Referenced by other packages as `@username/my_module/liba/libb`
+│       └── moon.pkg     # Referenced by other packages as `@username/my_module/liba/libb`
 ├── user_pkg.mbt              # Root packages, referenced by other packages as `@username/my_module`
 ├── user_pkg_wbtest.mbt       # White-box tests (only needed for testing internal private members, similar to Golang's package mypackage)
 └── user_pkg_test.mbt         # Black-box tests
@@ -37,7 +37,7 @@ my_module
   A MoonBit *module* is like a Go module; it is a collection of packages in subdirectories, usually corresponding to a repository or project.
   Module boundaries matter for dependency management and import paths.
 
-- **Package**: characterized by a `moon.pkg.json` (or `moon.pkg`) file in each directory.
+- **Package**: characterized by a `moon.pkg` (or `moon.pkg.json`) file in each directory.
   All subcommands of `moon` will
   still be executed in the directory of the module (where `moon.mod.json` is
   located), not the current package.
@@ -221,8 +221,8 @@ For project-local symbols and navigation, use:
 - `moon ide outline .` to scan a package,
 - `moon ide find-references <symbol>` to locate usages, and
 - `moon ide peek-def` for inline definition context and to locate toplevel symbols.
-- `moon ide hover sym -loc filename:line:col` to get type information at a specific location.
-- `moon ide rename <symbol> -new-name <new_name>` to rename a symbol project-wide.
+- `moon ide hover sym --loc filename:line:col` to get type information at a specific location.
+- `moon ide rename <symbol> <new_name>` to rename a symbol project-wide.
 These tools save tokens and are more precise than grepping (`grep` displays results in both definitions and call sites including comments too).
 
 ### `moon ide doc` for API Discovery
@@ -284,12 +284,12 @@ pub fn String::rev_find(String, StringView) -> Int?
 
 **Best practice**: When implementing a feature, start with `moon ide doc` queries to discover available APIs before writing code. This is faster and more accurate than searching through files.
 
-### `moon ide rename sym -new-name new_name [-loc filename:line:col]` example
+### `moon ide rename sym new_name [--loc filename:line:col]` example
 
 When the user asks: "Can you rename the function `compute_sum` to `calculate_sum`?"
 
 ```
-$ moon ide rename compute_sum -new-name calculate_sum -loc math_utils.mbt:2
+$ moon ide rename compute_sum calculate_sum --loc math_utils.mbt:2
 
 *** Begin Patch
 *** Update File: cmd/main/main.mbt
@@ -316,12 +316,12 @@ $ moon ide rename compute_sum -new-name calculate_sum -loc math_utils.mbt:2
 *** End Patch
 ```
 
-### `moon ide hover sym -loc filename:line:col` example
+### `moon ide hover sym --loc filename:line:col` example
 
 When the user asks: "What is the signature and docstring of `filter`? at line 14 of hover.mbt"
 
 ```
-$ moon ide hover  filter -loc hover.mbt:14
+$ moon ide hover  filter --loc hover.mbt:14
 test {
   let a: Array[Int] = [1]
   inspect(a.filter((x) => {x > 1}))
@@ -337,7 +337,7 @@ test {
 ```
 
 
-### `moon ide peek-def sym [-loc filename:line:col]` example
+### `moon ide peek-def sym [--loc filename:line:col]` example
 
 When the user asks: "Can you check if `Parser::read_u32_leb128` is implemented correctly?"
 you can run `moon ide peek-def Parser::read_u32_leb128` to get the definition context
@@ -353,7 +353,7 @@ L47:|  ...
 Now if you want to see the definition of the `Parser` struct, you can run:
 
 ```bash
-$ moon ide peek-def Parser -loc src/parse.mbt:46:4
+$ moon ide peek-def Parser --loc src/parse.mbt:46:4
 Definition found at file src/parse.mbt
   | ///|
 2 | priv struct Parser {
@@ -364,7 +364,7 @@ Definition found at file src/parse.mbt
   |
 ```
 
-For the `-loc` argument, the line number must be precise; the column can be approximate since
+For the `--loc` argument, the line number must be precise; the column can be approximate since
 the positonal argument `Parser` helps locate the position.
 
 If the "sym" is a toplevel symbol, the location can be omitted:
@@ -436,19 +436,19 @@ moon update                   # Update package index
 }
 ```
 
-### Typical Package configuration (`moon.pkg.json`)
+### Typical Package configuration (`moon.pkg`)
 
 moon.pkg for simplicity
 ```
 import {
   "username/hello/liba",
-  "moonbitlang/x/encoding" as @libb
+  "moonbitlang/x/encoding" @libb
 }
 import {...} for "test"
 import {...} for "wbtest"
-options("is-main" : true)
+options("is-main" : true) // other options
 ```
-or moon.pkg.json 
+or moon.pkg.json (legacy mode)
 ```json
 {
   "is_main": true,                 // Creates executable when true
@@ -464,9 +464,9 @@ or moon.pkg.json
 }
 ```
 
-Packages are per directory and packages without a `moon.pkg.json` or `moon.pkg` file are not recognized.
+Packages are per directory and packages without a `moon.pkg` or `moon.pkg.json` file are not recognized.
 
-### Package Importing (used in moon.pkg.json)
+### Package Importing (used in moon.pkg)
 
 - **Import format**: `"module_name/package_path"`
 - **Usage**: `@alias.function()` to call imported functions
@@ -477,7 +477,7 @@ Packages are per directory and packages without a `moon.pkg.json` or `moon.pkg` 
 **Package Alias Rules**:
 
 - Import `"username/hello/liba"` → use `@liba.function()` (default alias is the last path segment)
-- Import with custom alias `{"path": "moonbitlang/x/encoding", "alias": "enc"}` → use `@enc.function()`
+- Import with custom alias `import { "moonbitlang/x/encoding" @enc}` → use `@enc.function()`
   (Note that this is unnecessary when the last path segment is identical to the alias name.)
 - In `_test.mbt` or `_wbtest.mbt` files, the package being tested is auto-imported
 
@@ -485,7 +485,7 @@ Example:
 
 ```mbt
 ///|
-/// In main.mbt after importing "username/hello/liba" in `moon.pkg.json`
+/// In main.mbt after importing "username/hello/liba" in `moon.pkg`
 fn main {
   println(@liba.hello()) // Calls hello() from liba package
 }
@@ -493,7 +493,7 @@ fn main {
 
 ### Using the Standard Library (moonbitlang/core)
 
-**MoonBit standard library (moonbitlang/core) packages were automatically imported**. MoonBit is transitioning to explicit imports—you will see a warning to add imports like `moonbitlang/core/strconv` to `moon.pkg.json` if you use them.
+**MoonBit standard library (moonbitlang/core) packages were automatically imported**. MoonBit is transitioning to explicit imports—you will see a warning to add imports like `moonbitlang/core/strconv` to `moon.pkg` if you use them.
 The module is always available without adding to dependencies.
 
 
@@ -502,17 +502,14 @@ The module is always available without adding to dependencies.
 To add a new package `fib` under `.`:
 
 1. Create directory: `./fib/`
-2. Add `./fib/moon.pkg.json`: `{}` -- Minimal valid moon.pkg.json
+2. Add `./fib/moon.pkg`
 3. Add `.mbt` files with your code
 4. Import in dependent packages:
 
-   ```json
-   {
-     "import": [
-        "username/hello/fib",
-        ...
-     ]
-   }
+   ```
+     import {
+      "username/hello/fib",
+     }
    ```
 
 For more advanced topics like `conditional compilation`, `link configuration`, `warning control`, and `pre-build commands`, see `references/advanced-moonbit-build.md`.
@@ -527,7 +524,7 @@ For more advanced topics like `conditional compilation`, `link configuration`, `
   If a blank line is desired within a block (enclosed by curly braces), add a comment line after the blank line (with or without comment text).
 - **Visibility**: `fn` is private by default; `pub` exposes read/construct as allowed; `pub(all)` allows external construction.
 - **Naming convention**: lower_snake for values/functions; UpperCamel for types/enums; enum variants start UpperCamel.
-- **Packages**: No `import` in code files; call via `@alias.fn`. Configure imports in `moon.pkg.json`.
+- **Packages**: No `import` in code files; call via `@alias.fn`. Configure imports in `moon.pkg`.
 - **Placeholders**: `...` is a valid placeholder in MoonBit code for incomplete implementations.
 - **Global values**: immutable by default and generally require type annotations.
 - **Garbage collection**: MoonBit has a GC, there is no lifetime annotation, there's no ownership system.

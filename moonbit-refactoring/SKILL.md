@@ -229,14 +229,14 @@ for _ in 0..<n; a = 1, b = 2 {
 
 ### Prefer Range Loops to Simple Indexing
 - Use `for i in start..<end { ... }`, `for i in start..<=end { ... }`, `for i in large>..small`, or `for i in large>=..small` for simple index loops.
+- Use `for x in xs {...}` if xs is an iterator(e.g, Array) or `for i,x in xs {...}` if you also want to use the index
 - Keep functional-state `for` loops for algorithms that update state.
 
 Example:
 ```mbt
 // Before
-for i = 0; i < len; {
+for i = 0; i < len; i = i + 1{
   items.push(fill)
-  continue i + 1
 }
 
 // After
